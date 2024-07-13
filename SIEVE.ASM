@@ -1,6 +1,10 @@
+;---------------------------------------------------------------------
+	.TITLE  SIEVE            	 ; Program title
+;---------------------------------------------------------------------
 
-	.TITLE  SIEVE            ; Program title
 	.MCALL  .PRINT,.EXIT,.TTYOUT     ; System macros
+
+;-- String Table -----------------------------------------------------
 
 HELLOMSG:       .ASCIZ  /Sieve of Eratosthenes by Davepl 2024/
 DASHESMSG:      .ASCIZ  /----------------------------------/
@@ -13,10 +17,14 @@ MARKCMPMSG:     .ASCIZ  /Marking composite: /
 CHECKCMPMSG:    .ASCIZ  /Checking if composite: /
 EMPTYMSG:       .ASCIZ  //
 
+;-- Constants ---------------------------------------------------------
+
 LIMIT   =       1000.             ; Upper limit for primes
 BSIZE   =       1000.             ; Size of byte array (fixed value)
 
         .EVEN                     ; Ensure we're on a word boundary
+
+;-- Code Entry --------------------------------------------------------
 
 START:  .PRINT  #HELLOMSG
         .PRINT  #DASHESMSG
