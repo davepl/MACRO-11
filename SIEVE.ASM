@@ -2,7 +2,7 @@
 	.TITLE  SIEVE            ; Program title
 	.MCALL  .PRINT,.EXIT,.TTYOUT     ; System macros
 
-HELLOMSG:       .ASCIZ  /Sieve of Eratosthenes/
+HELLOMSG:       .ASCIZ  /Sieve of Eratosthenes by Davepl 2024/
 DASHESMSG:      .ASCIZ  /----------------------------------/
 CBITSMSG:       .ASCIZ  /Clearing byte array.  Sieve Size:/
 MSG2:           .ASCIZ  /Setup complete/
@@ -14,7 +14,7 @@ CHECKCMPMSG:    .ASCIZ  /Checking if composite: /
 EMPTYMSG:       .ASCIZ  //
 
 LIMIT   =       1000.             ; Upper limit for primes
-BSIZE   =       1000.              ; Size of byte array (fixed value)
+BSIZE   =       1000.             ; Size of byte array (fixed value)
 
         .EVEN                     ; Ensure we're on a word boundary
 
@@ -45,7 +45,8 @@ SIEVE:
         CMP     R1, #LIMIT        ; Check if we've reached the limit
         BGE     DONE.SV           ; If so, we're done
 
-;        .PRINT  #CHECKCMPMSG
+; Debug Output
+;        .PRINT  #CHECKCMPMSG	  ; Print the number we're checking next
 ;        MOV     R1, R0
 ;        JSR     PC, PRNUM
 ;        .PRINT  #EMPTYMSG
@@ -59,7 +60,8 @@ MARK:
         CMP     R2, #LIMIT        ; Check if we've exceeded the limit
         BGE     NXTODD            ; If so, move to next odd number
 
-;        .PRINT  #MARKCMPMSG
+; Debug Output
+;        .PRINT  #MARKCMPMSG	  ; Print the multiple we're marking next
 ;        MOV     R2, R0
 ;        JSR     PC, PRNUM
 ;        .PRINT  #EMPTYMSG
