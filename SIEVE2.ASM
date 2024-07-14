@@ -27,7 +27,7 @@ CHECKCMPMSG:    .ASCIZ  /Checking if composite: /
 EMPTYMSG:       .ASCIZ  / /
 
 LIMIT   =       10000.             ; Upper limit for primes
-BSIZE	=       2500.              ; Size of byte array (fixed value)
+BSIZE	=       1250.              ; Size of byte array (fixed value)
 
 ; Ensure we're on a word boundary in case the strings above are odd length
 
