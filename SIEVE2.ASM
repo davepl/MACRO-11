@@ -6,10 +6,6 @@
 ; This variant uses a single bit per number to mark composites, rather
 ; than a byte per number.  This reduces memory usage by a factor of 8
 ; so we can sieve larger ranges, but requires more complex bit work.
-;
-; TODO: This is one bit per sieve element, but could be optimized to
-;       ignore even numbers and use one bit per odd number. Just need
-;       to adjust the bit manipulation routines in ISCOMP and SETCMP
 
                 .TITLE  SIEVE                           ; Program title
                 .MCALL  .PRINT,.EXIT,.TTYOUT, .GTIM     ; System macros
@@ -18,22 +14,18 @@
 
 HELLOMSG:       .ASCIZ  /Sieve of Eratosthenes by Davepl 2024/
 DASHESMSG:      .ASCIZ  /------------------------------------/
-CBITSMSG:       .ASCII  /Clearing byte array.  Sieve Size: /
-                .BYTE   200
+CBITSMSG:       .ASCII  /Clearing byte array.  Sieve Size: /<200>
 RUNMSG:         .ASCIZ  /Running sieve/
 DONEMSG:        .ASCIZ  /Sieve complete/
-PRIMMSG:        .ASCII  /Prime numbers found: /
-                .BYTE   200
-TIMRMSG:        .ASCII  /Ticks Elapsed: /
-                .BYTE   200                
+PRIMMSG:        .ASCII  /Prime numbers found: /<200>
+TIMRMSG:        .ASCII  /Ticks Elapsed: /<200>
 MARKCMPMSG:     .ASCIZ  /Marking composite: /
 CHECKCMPMSG:    .ASCIZ  /Checking if composite: /
-TIMESTMP:       .ASCII  /Timestamp: /
-                .BYTE   200
+TIMESTMP:       .ASCII  /Timestamp: /<200>
 NEWLINE:        .ASCIZ  //
 
-LIMIT   =       15000.             ; Upper limit for primes
-BSIZE	=       5000.              ; Size of byte array (fixed value)
+LIMIT   =       10000.             ; Upper limit for primes
+BSIZE	=       625.              ; Size of byte array (fixed value)
 
 ; Ensure we're on a word boundary in case the strings above are odd length
 
@@ -145,58 +137,66 @@ DONE:
 
 ;-- Subroutines --------------------------------------------------------
 
-;-----------------------------------------------------------------------
-; SETCMP - Set a bit in the byte array to indicate a composite number
-; Registers used: R4, R5
-;-----------------------------------------------------------------------
+ISCOMP:
+        ; Check if the number is even
+        BIT     #1, R1           ; Check the low bit of R1
+        BEQ     ISNOTPRM          ; If even, it's not prime (composite)
+        
+        ; Adjust index for odd numbers
+        MOV     R1, R4           ; Copy bit number to R4
+        SUB     #1, R4           ; Subtract 1 to handle only odd numbers
+        ASR     R4               ; Divide by 2 to get the index for bit array
+        ASR     R4               ; Divide by 8 to get byte offset
+        ASR     R4
+	ASR     R4
+        ADD     #BITARR, R4      ; Add base address of BYTEARR
+        MOV     R4, R0           ; Store byte address in R0
+
+        MOV     R1, R5           ; Copy bit number to R5
+        SUB     #1, R5           ; Subtract 1 to handle only odd numbers
+        ASR     R5               ; Divide by 2 to get bit position
+        BIC     #^B1111111111111000, R5  ; Keep only lower 3 bits (bit position within byte)
+        MOV     #1., R2          ; Prepare a single bit
+        ASH     R5, R2           ; Shift to create bit mask
+
+        BITB    R2, (R0)         ; Test the bit position in the byte
+        RTS     PC               ; Return with condition codes set
+
+ISNOTPRM:
+        MOV     #1., R0          ; Return 1 (composite) for even numbers
+        RTS     PC               ; Return
 
 SETCMP:
-        MOV     R0, -(SP)       ; Preserve R0
-        MOV     R1, -(SP)       ; Preserve R1
+        MOV     R0, -(SP)        ; Preserve R0
+        MOV     R1, -(SP)        ; Preserve R1
 
-        MOV     R2, R4          ; Copy bit number to R4
-        ASR     R4              ; Divide by 2 (add this line)
-        ASR     R4              ; Divide by 8 to get byte offset
+        ; Check if the number is even
+        BIT     #1, R2           ; Check the low bit of R2
+        BEQ     SETRET           ; If even, just return
+
+        ; Adjust index for odd numbers
+        MOV     R2, R4           ; Copy bit number to R4
+        SUB     #1, R4           ; Subtract 1 to handle only odd numbers
+        ASR     R4               ; Divide by 2 to get the index for bit array
+        ASR     R4               ; Divide by 8 to get byte offset
         ASR     R4
-        ADD     #BITARR, R4     ; Add base address of BITARR
-        MOV     R4, R0          ; Store byte address in R0
-        
-        MOV     R2, R5          ; Copy bit number to R5
+	ASR     R4
+        ADD     #BITARR, R4     ; Add base address of BYTEARR
+        MOV     R4, R0           ; Store byte address in R0
+
+        MOV     R2, R5           ; Copy bit number to R5
+        SUB     #1, R5           ; Subtract 1 to handle only odd numbers
+        ASR     R5               ; Divide by 2 to get bit position
         BIC     #^B1111111111111000, R5  ; Keep only lower 3 bits (bit position within byte)
-        MOV     #1, R1          ; Prepare a single bit
-        ASH     R5, R1          ; Shift left to create bitmask for the specific bit
-        
-        BISB    R1, (R0)        ; Set the bit (byte operation)
+        MOV     #1., R1          ; Prepare a single bit
+        ASH     R5, R1           ; Shift to create bit mask
 
-        MOV     (SP)+, R1       ; Restore R1
-        MOV     (SP)+, R0       ; Restore R0
-        RTS     PC
+        BISB    R1, (R0)         ; Set the bit (byte operation)
 
-;-----------------------------------------------------------------------
-; ISCOMP - Check if a number is composite (when bit is set)
-; Result returned in the Z flag
-; Registers used: R0, R2, R4, R4
-;-----------------------------------------------------------------------
-
-ISCOMP:
-        MOV     R1, R4          ; Copy bit number to R4
-
-        ASR     R4              ; Divide by 8 to get byte offset
-        ASR     R4
-        ASR     R4
-
-        ADD     #BITARR, R4     ; Add base address of BITARR
-        MOV     R4, R0          ; Store byte address in R0
-
-        MOVB    (R0), R4        ; Load the byte containing the bit
-
-        MOV     R1, R5          ; Copy bit number to R5
-        BIC     #^B1111111111111000, R5  ; Keep only lower 3 bits (bit position within byte)
-        MOV     #1, R2          ; Prepare a single bit
-        ASH     R5, R2          ; Shift left to create bitmask for the specific bit
-
-        BITB    R2, R4          ; Test the bit (byte operation)
-        RTS     PC              ; Return with carry set if composite
+SETRET:
+        MOV     (SP)+, R1        ; Restore R1
+        MOV     (SP)+, R0        ; Restore R0
+        RTS     PC               ; Return
 
 ;-----------------------------------------------------------------------
 ; PRNUM - Print a number in R1 as ASCII
@@ -244,7 +244,7 @@ STRTTMR:    MOV     #TICKS, R1
 
 STOPTMR:    MOV     #TICKS, R1
             .GTIM   #AREA1, R1
-            MOV     TICKS, TICKS2     ; Store low order time in TICKS2
+            MOV     TICKS, TICKS2         ; Store low order time in TICKS2
             MOV     TICKS+2, TICKS2+2     ; Store low order time in TICKS2
             MOV     TICKS+2, R0
             RTS     PC      
@@ -257,5 +257,3 @@ ELAPSED:    MOV     TICKS2+2, R0
 BITARR: .BLKB   BSIZE             ; Byte array for sieve
 
 .END    START
-
-
