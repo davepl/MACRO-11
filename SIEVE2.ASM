@@ -11,8 +11,10 @@
 ;       ignore even numbers and use one bit per odd number. Just need
 ;       to adjust the bit manipulation routines in ISCOMP and SETCMP
 
-                .TITLE  SIEVE                    ; Program title
-                .MCALL  .PRINT,.EXIT,.TTYOUT     ; System macros
+                .TITLE  SIEVE                           ; Program title
+                .MCALL  .PRINT,.EXIT,.TTYOUT, .GTIM     ; System macros
+                .GLOBL  $DIVTK,$DIV60                   ; Global symbols
+
 
 HELLOMSG:       .ASCIZ  /Sieve of Eratosthenes by Davepl 2024/
 DASHESMSG:      .ASCIZ  /------------------------------------/
@@ -22,12 +24,16 @@ RUNMSG:         .ASCIZ  /Running sieve/
 DONEMSG:        .ASCIZ  /Sieve complete/
 PRIMMSG:        .ASCII  /Prime numbers found: /
                 .BYTE   200
+TIMRMSG:        .ASCII  /Ticks Elapsed: /
+                .BYTE   200                
 MARKCMPMSG:     .ASCIZ  /Marking composite: /
 CHECKCMPMSG:    .ASCIZ  /Checking if composite: /
-EMPTYMSG:       .ASCIZ  / /
+TIMESTMP:       .ASCII  /Timestamp: /
+                .BYTE   200
+NEWLINE:        .ASCIZ  //
 
-LIMIT   =       10000.             ; Upper limit for primes
-BSIZE	=       2500.              ; Size of byte array (fixed value)
+LIMIT   =       15000.             ; Upper limit for primes
+BSIZE	=       5000.              ; Size of byte array (fixed value)
 
 ; Ensure we're on a word boundary in case the strings above are odd length
 
@@ -38,9 +44,14 @@ START:  .PRINT  #HELLOMSG          ; Welcome banner
         .PRINT  #CBITSMSG          ; Display sieve size
         MOV     #LIMIT, R0
         JSR     PC, PRNUM
-        .PRINT  #EMPTYMSG
+        .PRINT  #NEWLINE
 
 ;-- Clear the byte array -----------------------------------------------
+
+;        .PRINT  #TIMESTMP          ; Display timestamp
+         JSR     PC, STRTTMR
+;        JSR     PC, PRNUM
+;        .PRINT  #NEWLINE
 
         MOV     #BSIZE, R1
         CLR     R2
@@ -63,7 +74,7 @@ SIEVE:
 ;        .PRINT  #CHECKCMPMSG
 ;        MOV     R1, R0
 ;        JSR     PC, PRNUM
-;        .PRINT  #EMPTYMSG
+;        .PRINT  #NEWLINE
 
         JSR     PC, ISCOMP        ; Check if R1 is composite
         BNE     NXTODD            ; If prime, skip to next odd number
@@ -78,7 +89,7 @@ MARK:
 ;        .PRINT  #MARKCMPMSG
 ;        MOV     R2, R0
 ;        JSR     PC, PRNUM
-;        .PRINT  #EMPTYMSG
+;        .PRINT  #NEWLINE
 
         JSR     PC, SETCMP        ; Mark R2 as composite
         BR      MARK              ; Continue marking multiples
@@ -87,7 +98,12 @@ NXTODD:
         ADD     #2, R1            ; Move to next odd number
         BR      SIEVE             ; Continue sieving
 
-DONESV:
+DONESV: 
+;        .PRINT  #TIMESTMP          ; Display timestamp
+        JSR     PC, STOPTMR       ; Stop the timer
+;        JSR     PC, PRNUM
+;        .PRINT  #NEWLINE
+
         .PRINT  #DONEMSG
         .PRINT  #PRIMMSG
         
@@ -116,9 +132,14 @@ PRNXT:
         ADD     #2, R1            ; Move to next odd number
         BR      PRNLP             ; Continue printing primes
 
-DONE:   .PRINT  EMPTYMSG
+DONE:   
         MOV     R3, R0            ; Print count of primes
         JSR     PC, PRNUM
+        .PRINT  NEWLINE
+
+        .PRINT  #TIMRMSG
+        JSR     PC, ELAPSED
+        JSR     PC, PRNUM         ; Print elapsed time
 
         .EXIT                     ; Exit program
 
@@ -202,7 +223,39 @@ PRINT:  ADD     #'0, R1           ; Convert remainder to ASCII
         MOV     (SP)+, R0         ; Restore R0
         RTS     PC                ; Return
 
-	.EVEN
+        .EVEN
+
+;-----------------------------------------------------------------------
+; Timer routines - Used to measure how long the sieve took to execute
+;-----------------------------------------------------------------------
+
+; Global variables to store start and stop times
+AREA1:   .BLKW   2
+TICKS:   .BLKW   2
+TICKS1:  .BLKW   2 
+TICKS2:  .BLKW   2      
+
+STRTTMR:    MOV     #TICKS, R1
+            .GTIM   #AREA1, R1
+            MOV     TICKS, TICKS1        ; Store low order time in TICKS1
+            MOV     TICKS+2, TICKS1+2    ; Store low order time in TICKS1
+            MOV     TICKS+2, R0
+            RTS     PC
+
+STOPTMR:    MOV     #TICKS, R1
+            .GTIM   #AREA1, R1
+            MOV     TICKS, TICKS2     ; Store low order time in TICKS2
+            MOV     TICKS+2, TICKS2+2     ; Store low order time in TICKS2
+            MOV     TICKS+2, R0
+            RTS     PC      
+
+ELAPSED:    MOV     TICKS2+2, R0 
+            SUB     TICKS1+2, R0
+            RTS     PC
+
+; Bit array data for the sieve
 BITARR: .BLKB   BSIZE             ; Byte array for sieve
 
-        .END    START
+.END    START
+
+
