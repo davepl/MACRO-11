@@ -1,3 +1,15 @@
+/* Sieve of Eratosthenes
+  
+   by Dave Plummer 08/06/2024
+   for the PDP-11 runing 211-BSD
+
+   This program calculates prime numbers using the Sieve of Eratosthenes
+   algorithm.  It follows the basic rules of the Primes competition in 
+   Dave's Garage, but it is limited to a 500K limit due to available ram.
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +20,12 @@
 #define DEFAULT_SECONDS 5
 #define BITSPERBYTE 8
 
+/* Macros for bit manipulation */
+
 #define GET_BIT(array, n) ((array[(n) / BITSPERBYTE] >> ((n) % BITSPERBYTE)) & 1)
 #define SET_BIT(array, n) (array[(n) / BITSPERBYTE] |= (1 << ((n) % BITSPERBYTE)))
+
+/* Structure to hold the expected results for a given limit */
 
 struct Result {
     long limit;
@@ -25,6 +41,8 @@ struct Result resultsDictionary[] = {
     {1000000L, 78498},
 };
 
+/* Program Help */
+
 void print_help(progname)
 char *progname;
 {
@@ -37,6 +55,8 @@ char *progname;
     printf("  -q          Suppress banners and extraneous output\n");
     printf("  -h, -?      Print this help message and exit\n");
 }
+
+/* Validate a limit versus an expected result */
 
 int validate_results(limit, count)
 long limit;
@@ -99,6 +119,8 @@ long *count_ptr;
     *count_ptr = count;
 }
 
+/* Main program - parses args and runs sieve */
+
 int main(argc, argv)
 int argc;
 char *argv[];
@@ -145,7 +167,7 @@ char *argv[];
     if (!quiet) {
         printf("------------------------------------\n");
         printf("Sieve of Eratosthenes by Davepl 2024\n");
-        printf("v2.00 for the PDP-11 running 211-BSD\n");
+        printf("v2.01 for the PDP-11 running 211-BSD\n");
         printf("------------------------------------\n");
     }
 
