@@ -38,6 +38,7 @@ struct Result resultsDictionary[] = {
     {1000L, 168},
     {10000L, 1229},
     {100000L, 9592},
+    {500000L, 41538},
     {1000000L, 78498},
 };
 
@@ -167,7 +168,7 @@ char *argv[];
     if (!quiet) {
         printf("------------------------------------\n");
         printf("Sieve of Eratosthenes by Davepl 2024\n");
-        printf("v2.01 for the PDP-11 running 211-BSD\n");
+        printf("v2.02 for the PDP-11 running 211-BSD\n");
         printf("------------------------------------\n");
     }
 
